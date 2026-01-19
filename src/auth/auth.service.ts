@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,16 +11,21 @@ import { CreateUserDto, LoginUserDto } from './dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './entities/auth.entity';
+import { FileLogger } from '../logger/logger.service';
+import { PostgresError } from '../logger/interfaces/postgres-error';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger('AuthService');
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
     private readonly jwtService: JwtService,
-  ) {}
+
+    private readonly logger: FileLogger,
+  ) {
+    this.logger.setContext(AuthService.name);
+  }
 
   async create(createUserDto: CreateUserDto) {
     try {
@@ -60,10 +64,12 @@ export class AuthService {
     });
 
     if (!user) {
+      this.logger.error('Invalid credentials (email)');
       throw new UnauthorizedException('Invalid credentials (email)');
     }
 
     if (!bcrypt.compareSync(password, user.password)) {
+      this.logger.error('Invalid credentials (password)');
       throw new UnauthorizedException('Invalid credentials (password)');
     }
 
@@ -85,13 +91,18 @@ export class AuthService {
     };
   }
 
-  private handleDBErrors(error: any): never {
-    const errorRes = error as { code: string; detail: string; message: string };
+  private handleDBErrors(error: unknown): never {
+    const stack = error instanceof Error ? error.stack : undefined;
+    const pgError = error as Partial<PostgresError>;
 
-    if (errorRes.code === '23505') {
-      throw new BadRequestException(errorRes.detail);
+    if (pgError.code === '23505') {
+      throw new BadRequestException(pgError.detail || 'Record already exists');
     }
-    this.logger.error(errorRes);
+
+    if (pgError.code === '23503') {
+      throw new BadRequestException(pgError.detail || 'Foreign key violation');
+    }
+    this.logger.error(pgError.message || 'Unknown DB Error', stack);
     throw new InternalServerErrorException(
       'Unexpected error, check server logs',
     );

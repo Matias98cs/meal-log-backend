@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/auth.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { LoggerModule } from '../logger/logger.module';
 
 @Module({
   controllers: [AuthController],
@@ -29,6 +30,7 @@ import { JwtModule } from '@nestjs/jwt';
         };
       },
     }),
+    LoggerModule,
   ],
   exports: [AuthService, TypeOrmModule, JwtStrategy, PassportModule, JwtModule],
 })

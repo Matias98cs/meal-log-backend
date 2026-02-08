@@ -60,6 +60,8 @@ export class AuthService {
         email: true,
         password: true,
         id: true,
+        fullName: true,
+        roles: true,
       },
     });
 

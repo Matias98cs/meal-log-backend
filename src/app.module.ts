@@ -5,6 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { LoggerModule } from './logger/logger.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { SeedModule } from './seed/seed.module';
+import { MealsModule } from './meals/meals.module';
+import { FilesModule } from './files/files.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -22,6 +25,10 @@ import { SeedModule } from './seed/seed.module';
       synchronize: true, // set to false in production
     }),
 
+    ServeStaticModule.forRoot({
+      rootPath: `${__dirname}/../public`,
+    }),
+
     AuthModule,
 
     LoggerModule,
@@ -29,6 +36,10 @@ import { SeedModule } from './seed/seed.module';
     IngredientsModule,
 
     SeedModule,
+
+    MealsModule,
+
+    FilesModule,
   ],
   controllers: [],
   providers: [],
